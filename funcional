@@ -1,0 +1,121 @@
+import Text.Show.Functions
+
+import Data.List
+
+data Cliente = Cliente {
+nombre :: String,
+categoria :: String,
+saldo :: Float,
+ubicacion :: Coordenada
+} deriving (Eq, Show)
+data Pedidos = Pedidos {
+cliente :: Cliente,
+producto :: [Productos],
+fecha :: (Int, Int, Int)
+} deriving (Show)
+data Productos = Productos {
+descripcion :: String,
+precio :: Float,
+deposito :: (Float,Float)}
+ deriving (Show)
+ 
+ 
+type Coordenada = (Float, Float)
+
+
+jorge = Cliente {
+ nombre = "Jorge",
+ categoria= "amigo",
+ saldo = 5000,
+ ubicacion = (50 , 30)}
+
+carlos = Cliente {
+ nombre = "Carlos",
+ categoria= "frecuente",
+ saldo = 4500,
+ ubicacion = (20 ,25)}
+
+
+pedidoUno = Pedidos {
+ cliente = jorge,
+ producto = [productoUno,productoDos],
+ fecha = (1,3,2019) }
+
+productoUno = Productos {
+ descripcion = "Es largo",
+ precio = 150,
+ deposito = (40,60) }
+
+pedidoDos = Pedidos {
+ cliente = jorge,
+ producto = [productoDos],
+ fecha = (26,6,2011)}
+
+productoDos = Productos {
+ descripcion = "Es feo",
+ precio = 300,
+ deposito = (40,60) }
+ 
+ --1 Dado un conjunto de pedidos, obtener todos los pedidos viejos (del año 2018 o anteriores)
+anio (_,_,a) = a
+pedidoViejo pedido = (anio (fecha pedido))<2018
+listaPedidos lista = filter pedidoViejo lista
+
+--2 Agregar un producto a un pedido
+agregar productoAgregado pedido = productoAgregado ++ pedido producto
+
+--3 Obtener el cliente que está más lejos de una ubicación dada, de entre dos clientes dados.
+
+
+distancia :: Coordenada -> Coordenada -> Float
+
+distancia (x,y) (x2, y2) = sqrt ((x2-x)^2 + (y2-y)^2)
+
+clienteMasLejos lugar cliente1 cliente2 | distancia lugar (ubicacion cliente1) > distancia lugar (ubicacion cliente2) = cliente1
+                                        | otherwise = cliente2
+
+
+
+--4 Calcular el costo basico de un pedido
+
+precioIndividual :: Productos -> Float
+precioIndividual producto = precio producto
+
+listaPrecios :: Pedidos -> [Float]
+listaPrecios pedido = map precioIndividual (producto pedido)
+
+costo :: Pedidos -> Float
+costo pedido = sum (listaPrecios pedido)
+
+
+--5 Obtener el costo de envío de un pedido, asumiendo que se calcula como 3$ por cada km recorrido y considerando la distancia
+recorrido :: Cliente -> Productos -> Float
+recorrido cliente producto = distancia ( ubicacion cliente) (deposito producto)
+
+kilometrosRecorridos :: Cliente -> [Productos] -> Float
+kilometrosRecorridos cliente producto = sum (map (recorrido cliente) producto)
+
+costoEnvio :: Pedidos -> Float
+costoEnvio pedido = kilometrosRecorridos (cliente pedido) (producto pedido) *3
+
+--6--Obtener el costo total de un pedido, que es el costo básico más el costo de envío, pero con un descuento de acuerdo a la categoría
+-- del cliente. Los clientes comunes no tienen descuento, los clientes frecuentes tienen un 10% y los clientes que mas que clientes
+-- son amigos, un 20%, pero sólo se aplica si el costo básico es mayor que el costo de envío.
+
+costoTotal:: Pedidos -> Float
+costoTotal pedido | (costo pedido) > (costoEnvio pedido) = (costo pedido + costoEnvio pedido) * (descuento (cliente pedido))
+                  | otherwise = (costo pedido + costoEnvio pedido)
+
+descuento cliente    | (categoria cliente == "frecuente") = 0.9
+                     | (categoria cliente == "amigo") = 0.8
+                     | otherwise = 1
+
+--7Saber como queda el cliente luego de haber pagado un pedido
+
+paga pedido cliente = cliente {saldo = ((saldo cliente) - costoTotal pedido)}
+
+--8Obtener el cliente con mayor deuda, de entre un conjunto de clientes.
+
+tieneMenos cliente1 cliente2 |(saldo cliente1) < (saldo cliente2) = cliente1
+                             |otherwise = cliente2
+mayordeudor conjunto = nombre (foldl1 tieneMenos (conjunto))
